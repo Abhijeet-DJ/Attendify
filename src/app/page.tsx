@@ -1,25 +1,29 @@
 
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@clerk/nextjs';
+// import { useEffect } from 'react';
+// import { useRouter } from 'next/navigation';
+// import { useAuth } from '@clerk/nextjs'; // Clerk removed
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Logo from '@/components/shared/Logo';
-// Link and Button might be used if you want explicit navigation buttons on the landing page itself
-// import Link from 'next/link';
-// import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
-  const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  // const router = useRouter();
+  // const { isSignedIn, isLoaded } = useAuth(); // Clerk removed
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      router.replace('/dashboard');
-    }
-  }, [isSignedIn, isLoaded, router]);
+  // useEffect(() => {
+  //   if (isLoaded && isSignedIn) {
+  //     router.replace('/dashboard');
+  //   }
+  // }, [isSignedIn, isLoaded, router]);
+
+  // For now, assume not loaded or not signed in to show landing page
+  // Actual loading state and redirection will be handled by custom auth logic later
+  const isLoaded = true; // Placeholder
+  const isSignedIn = false; // Placeholder
 
   if (!isLoaded) {
     return (
@@ -55,8 +59,16 @@ export default function HomePage() {
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-6 py-8">
           <p className="text-center text-foreground">
-            Please use the buttons in the header to sign in or create an account.
+            Get started by creating an account or signing in if you already have one.
           </p>
+          <div className="flex w-full gap-3">
+            <Button className="flex-1" asChild>
+              <Link href="/signup">Create Account</Link>
+            </Button>
+            <Button variant="outline" className="flex-1" asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
       <footer className="mt-12 text-center text-sm text-muted-foreground">

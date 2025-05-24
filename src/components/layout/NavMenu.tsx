@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -15,36 +16,45 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import type { UserResource } from '@clerk/types'; // Import Clerk's UserResource type
+import type { SafeUserProfile } from '@/types'; // Use SafeUserProfile for custom user
 
 interface NavMenuProps {
-  clerkUser: UserResource | null | undefined; // Use Clerk's user type
+  customUser: SafeUserProfile | null | undefined; // Use custom user type
 }
 
-export default function NavMenu({ clerkUser }: NavMenuProps) {
+export default function NavMenu({ customUser }: NavMenuProps) {
   const pathname = usePathname();
   
-  // Determine admin status based on Clerk user's email and environment variable
-  const isAdmin = clerkUser?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  // Determine admin status based on custom user's role and environment variable
+  const isAdmin = customUser?.role === 'admin' && customUser?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  // const isTeacher = customUser?.role === 'teacher';
+  // const isStudent = customUser?.role === 'student';
 
-  const baseItems = [
-    { href: '/profile', label: 'Profile', icon: UserCircle },
-  ];
-
+  // For now, show a basic menu. This will be expanded with role-based logic.
   let menuItems = [
-    { href: '/attendance', label: 'My Attendance', icon: ListChecks },
-    ...baseItems,
+    { href: '/', label: 'Home', icon: LayoutDashboard }, // Temp home link
+    { href: '/profile', label: 'Profile', icon: UserCircle },
+    // { href: '/attendance', label: 'My Attendance', icon: ListChecks },
   ];
 
-  if (isAdmin) {
+  if (customUser) { // If user is signed in (placeholder logic)
     menuItems = [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/attendance-management', label: 'Manage Attendance', icon: ListChecks },
-      { href: '/anomaly-detection', label: 'Anomaly Detection', icon: FlaskConical },
-      { href: '/users', label: 'User Management', icon: Users },
-      ...baseItems,
-      { href: '/settings', label: 'Settings', icon: Settings },
+        { href: '/attendance', label: 'My Attendance', icon: ListChecks },
+        { href: '/profile', label: 'Profile', icon: UserCircle },
     ];
+    if (isAdmin) {
+        menuItems = [
+          { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { href: '/attendance-management', label: 'Manage Attendance', icon: ListChecks },
+          { href: '/anomaly-detection', label: 'Anomaly Detection', icon: FlaskConical },
+          { href: '/users', label: 'User Management', icon: Users },
+          { href: '/profile', label: 'Profile', icon: UserCircle },
+          { href: '/settings', label: 'Settings', icon: Settings },
+        ];
+    }
+  } else {
+    // Menu for signed-out users (or if user data is not yet available)
+     menuItems = [ { href: '/', label: 'Home', icon: LayoutDashboard } ];
   }
   
   return (

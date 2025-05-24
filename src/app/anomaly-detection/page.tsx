@@ -1,49 +1,52 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PageHeader from '@/components/shared/PageHeader';
 import AnomalyDetectionForm from '@/components/anomaly/AnomalyDetectionForm';
 import AnomalyResultCard from '@/components/anomaly/AnomalyResultCard';
 import type { AttendanceAnomalyInput, AttendanceAnomalyOutput } from '@/types';
-import { detectAttendanceAnomaly } from '@/ai/flows/attendance-anomaly-detection';
-import { useUser, useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+// import { detectAttendanceAnomaly } from '@/ai/flows/attendance-anomaly-detection'; // AI flow will be re-integrated
+// import { useUser, useAuth } from '@clerk/nextjs'; // Clerk removed
+// import { useRouter } from 'next/navigation';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FlaskConical } from 'lucide-react';
+import { FlaskConical, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
+// This page will be updated to use custom authentication.
+// For now, it's a placeholder.
 export default function AnomalyDetectionPage() {
-  const { user, isLoaded: userLoaded } = useUser();
-  const { isLoaded: authLoaded, isSignedIn } = useAuth();
-  const router = useRouter();
+  // const router = useRouter();
   const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AttendanceAnomalyOutput | null>(null);
   const [currentInput, setCurrentInput] = useState<AttendanceAnomalyInput | null>(null);
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  const isSignedIn = false; // Placeholder
+  const isAdmin = false; // Placeholder
+  const isLoaded = true; // Placeholder
 
-  useEffect(() => {
-    if (authLoaded && userLoaded) {
-      if (isSignedIn && !isAdmin) {
-        router.replace('/dashboard'); 
-      }
-      // If not signedIn, Clerk middleware should handle redirection.
-    }
-  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
+  // useEffect(() => {
+  //   // Custom auth checks and redirection
+  // }, [isSignedIn, isAdmin, isLoaded, router]);
 
   const handleDetectAnomaly = async (input: AttendanceAnomalyInput) => {
     setIsLoading(true);
     setAnalysisResult(null);
     setCurrentInput(input);
     try {
-      const result = await detectAttendanceAnomaly(input);
-      setAnalysisResult(result);
+      // const result = await detectAttendanceAnomaly(input); // Re-enable with custom auth context
+      // setAnalysisResult(result);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate AI call
+      const mockResult: AttendanceAnomalyOutput = { isAnomaly: Math.random() > 0.5, explanation: "Mock analysis result."};
+      setAnalysisResult(mockResult);
       toast({
-        title: 'Analysis Complete',
-        description: result.isAnomaly ? 'Anomaly detected.' : 'No anomaly detected.',
+        title: 'Analysis Complete (Mock)',
+        description: mockResult.isAnomaly ? 'Anomaly detected.' : 'No anomaly detected.',
       });
     } catch (error) {
       console.error('Error detecting anomaly:', error);
@@ -57,7 +60,7 @@ export default function AnomalyDetectionPage() {
     }
   };
 
-  if (!authLoaded || !userLoaded) {
+  if (!isLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl"/>
@@ -65,20 +68,22 @@ export default function AnomalyDetectionPage() {
     );
   }
 
-  if (isSignedIn && !isAdmin) {
+  if (!isSignedIn) {
      return (
-      <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
-         <p>Access Denied. Redirecting...</p>
-        <LoadingSpinner size="xl" />
+      <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
+         <p className="text-lg font-medium">Access Denied</p>
+         <p className="text-muted-foreground">Please sign in as an admin to use this feature.</p>
+         <Button asChild><Link href="/login">Sign In</Link></Button>
       </div>
     );
   }
   
-  if (!isSignedIn) {
+  if (isSignedIn && !isAdmin) {
      return (
-      <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
-         <p>Access Denied. Please sign in.</p>
-        <LoadingSpinner size="xl" />
+      <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <p className="text-lg font-medium">Access Denied</p>
+        <p className="text-muted-foreground">You do not have permission to view this page.</p>
       </div>
     );
   }
@@ -87,7 +92,7 @@ export default function AnomalyDetectionPage() {
     <div className="space-y-6">
       <PageHeader
         title="Attendance Anomaly Detection"
-        description="Use AI to identify unusual join/leave patterns in student attendance."
+        description="Use AI to identify unusual join/leave patterns. (Functionality pending sign-in)"
       />
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-lg">

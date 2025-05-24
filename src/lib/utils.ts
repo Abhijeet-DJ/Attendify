@@ -5,32 +5,32 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export interface ParsedClerkUsername {
-  parsedFullName: string | null;
+export interface ParsedNameAndId {
+  parsedName: string | null;
   extractedId: string | null;
 }
 
 /**
- * Parses a Clerk username string to extract a full name and an ID.
- * Assumes the format "FullName_ID" where ID is the part after the last underscore.
- * @param username The Clerk username string.
- * @returns An object containing parsedFullName and extractedId.
+ * Parses a string (expected to be like "FullName_ID") to extract a full name and an ID.
+ * ID is the part after the last underscore.
+ * @param inputString The string to parse.
+ * @returns An object containing parsedName and extractedId.
  */
-export function parseClerkUsername(username: string | null | undefined): ParsedClerkUsername {
-  if (!username) {
-    return { parsedFullName: null, extractedId: null };
+export function parseNameAndIdFromString(inputString: string | null | undefined): ParsedNameAndId {
+  if (!inputString) {
+    return { parsedName: null, extractedId: null };
   }
 
-  const lastUnderscoreIndex = username.lastIndexOf('_');
+  const lastUnderscoreIndex = inputString.lastIndexOf('_');
 
-  if (lastUnderscoreIndex === -1 || lastUnderscoreIndex === 0 || lastUnderscoreIndex === username.length - 1) {
+  if (lastUnderscoreIndex === -1 || lastUnderscoreIndex === 0 || lastUnderscoreIndex === inputString.length - 1) {
     // No underscore, or it's at the beginning/end, so no valid ID to extract.
-    // Treat the whole username as the full name in this case.
-    return { parsedFullName: username, extractedId: null };
+    // Treat the whole string as the name in this case.
+    return { parsedName: inputString, extractedId: null };
   }
 
-  const parsedFullName = username.substring(0, lastUnderscoreIndex);
-  const extractedId = username.substring(lastUnderscoreIndex + 1);
+  const parsedName = inputString.substring(0, lastUnderscoreIndex);
+  const extractedId = inputString.substring(lastUnderscoreIndex + 1);
 
-  return { parsedFullName, extractedId };
+  return { parsedName, extractedId };
 }

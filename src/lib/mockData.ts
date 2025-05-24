@@ -1,11 +1,13 @@
 import type { AttendanceLog, Meeting, UserProfile, AttendanceStatus, JoinLeaveEvent } from '@/types';
 
-export const mockUsers: UserProfile[] = [
-  { id: 'student1', email: 'alice@example.com', name: 'Alice Wonderland', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=AW', registrationNumber: 'S1001' },
-  { id: 'student2', email: 'bob@example.com', name: 'Bob The Builder', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=BB', registrationNumber: 'S1002' },
-  { id: 'student3', email: 'charlie@example.com', name: 'Charlie Brown', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=CB', registrationNumber: 'S1003' },
-  { id: 'student4', email: 'diana@example.com', name: 'Diana Prince', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=DP' }, // No registration number for variety
-  { id: 'admin1', email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com', name: 'Admin User', role: 'admin', photoURL: 'https://placehold.co/100x100.png?text=AU', teacherId: 'T001' },
+// IMPORTANT: Passwords here are plain text and will be hashed by the seed script.
+// DO NOT store plain text passwords in production code.
+export const mockUsers: Omit<UserProfile, '_id' | 'hashedPassword'> & { id: string; password?: string }[] = [
+  { id: 'student1_mock', email: 'alice@example.com', name: 'Alice Wonderland', role: 'student', avatarUrl: 'https://placehold.co/100x100.png?text=AW', registrationNumber: 'S1001', password: 'password123' },
+  { id: 'student2_mock', email: 'bob@example.com', name: 'Bob The Builder', role: 'student', avatarUrl: 'https://placehold.co/100x100.png?text=BB', registrationNumber: 'S1002', password: 'password123' },
+  { id: 'student3_mock', email: 'charlie@example.com', name: 'Charlie Brown', role: 'student', avatarUrl: 'https://placehold.co/100x100.png?text=CB', registrationNumber: 'S1003', password: 'password123' },
+  { id: 'student4_mock', email: 'diana@example.com', name: 'Diana Prince', role: 'student', avatarUrl: 'https://placehold.co/100x100.png?text=DP', password: 'password123' }, // No registration number for variety
+  { id: 'admin1_mock', email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com', name: 'Admin User', role: 'admin', avatarUrl: 'https://placehold.co/100x100.png?text=AU', teacherId: 'T001', password: 'password123' },
 ];
 
 export const mockMeetings: Meeting[] = [
@@ -25,19 +27,18 @@ const generateJoinLeaveEvents = (baseTime: Date, status: AttendanceStatus): {eve
   if (status === 'Absent') return { events, joinTime, leaveTime, duration };
 
   const meetingStartTime = new Date(baseTime);
-  // Randomize meeting start hour for variety
-  const startHour = 9 + Math.floor(Math.random() * 5); // Meetings between 9 AM and 1 PM
-  meetingStartTime.setHours(startHour, 0, 0, 0); 
+  const startHour = 9 + Math.floor(Math.random() * 5);
+  meetingStartTime.setHours(startHour, 0, 0, 0);
 
   const firstJoin = new Date(meetingStartTime);
-  if (status === 'Late') firstJoin.setMinutes(meetingStartTime.getMinutes() + (10 + Math.floor(Math.random() * 10))); // 10-20 mins late
-  else firstJoin.setMinutes(meetingStartTime.getMinutes() + Math.floor(Math.random() * 5)); // Join within 5 mins
+  if (status === 'Late') firstJoin.setMinutes(meetingStartTime.getMinutes() + (10 + Math.floor(Math.random() * 10)));
+  else firstJoin.setMinutes(meetingStartTime.getMinutes() + Math.floor(Math.random() * 5));
 
   events.push({ timestamp: firstJoin.toISOString(), type: 'join' });
   joinTime = firstJoin.toISOString();
 
-  const meetingDuration = 60 + Math.floor(Math.random() * 31); // Meeting duration 60-90 minutes
-  let timeInMeeting = meetingDuration - Math.floor(Math.random() * (status === 'Partial' ? meetingDuration / 2 : 10)); 
+  const meetingDuration = 60 + Math.floor(Math.random() * 31);
+  let timeInMeeting = meetingDuration - Math.floor(Math.random() * (status === 'Partial' ? meetingDuration / 2 : 10));
   if (status === 'Partial') timeInMeeting = Math.floor(meetingDuration / 3) + Math.floor(Math.random() * (meetingDuration/3));
 
   const lastLeave = new Date(firstJoin);
@@ -47,15 +48,14 @@ const generateJoinLeaveEvents = (baseTime: Date, status: AttendanceStatus): {eve
   
   duration = Math.max(0, Math.round((lastLeave.getTime() - firstJoin.getTime()) / (1000 * 60)));
 
-  // Simulate anomaly: multiple joins/leaves
-  if (Math.random() < 0.3 && status !== 'Absent' && timeInMeeting > 20) { 
+  if (Math.random() < 0.3 && status !== 'Absent' && timeInMeeting > 20) {
     const midLeaveTime = new Date(firstJoin);
     midLeaveTime.setMinutes(firstJoin.getMinutes() + Math.floor(timeInMeeting / 3));
     events.push({ timestamp: midLeaveTime.toISOString(), type: 'leave' });
 
     const reJoinTime = new Date(midLeaveTime);
-    reJoinTime.setMinutes(midLeaveTime.getMinutes() + 5 + Math.floor(Math.random() * 5)); 
-    if (reJoinTime < lastLeave) { // Ensure rejoin is before final leave
+    reJoinTime.setMinutes(midLeaveTime.getMinutes() + 5 + Math.floor(Math.random() * 5));
+    if (reJoinTime < lastLeave) {
         events.push({ timestamp: reJoinTime.toISOString(), type: 'join' });
         duration = Math.max(0, Math.round((midLeaveTime.getTime() - firstJoin.getTime()) / (1000 * 60)) + Math.round((lastLeave.getTime() - reJoinTime.getTime()) / (1000 * 60)));
     }
@@ -66,11 +66,9 @@ const generateJoinLeaveEvents = (baseTime: Date, status: AttendanceStatus): {eve
   return { events, joinTime, leaveTime, duration };
 };
 
-
 export const mockAttendanceLogs: AttendanceLog[] = mockUsers.filter(u => u.role === 'student').flatMap((student) =>
   mockMeetings.map((meeting, meetingIndex) => {
     const attendanceStatuses: AttendanceStatus[] = ['Present', 'Present', 'Late', 'Absent', 'Partial', 'Present'];
-    // Make status more random per student-meeting pair
     const status = attendanceStatuses[Math.floor(Math.random() * attendanceStatuses.length)];
     
     const baseDate = new Date(meeting.date);
@@ -78,28 +76,19 @@ export const mockAttendanceLogs: AttendanceLog[] = mockUsers.filter(u => u.role 
     
     let isAnomaly = false;
     let anomalyExplanation: string | undefined = undefined;
-
     const joinEventsCount = events.filter(e => e.type === 'join').length;
 
     if (joinEventsCount > 1 && status !== 'Absent') {
       isAnomaly = true;
       anomalyExplanation = `Student joined the meeting ${joinEventsCount} times.`;
-    } else if (status === 'Partial' && duration !== null && duration < 30) { 
+    } else if (status === 'Partial' && duration !== null && duration < 30) {
         isAnomaly = true;
         anomalyExplanation = `Student was present for only ${duration} minutes.`;
-    } else if (status === 'Late' && joinTime) {
-        const meetingStart = new Date(joinTime); // Base this on actual meeting start time if available
-        meetingStart.setMinutes(0); // Assuming meeting started at HH:00 for simplicity
-        if (new Date(joinTime).getMinutes() > 20) { // More than 20 mins late
-             // isAnomaly = true; // Let's not flag all lates as anomalies, AI can do better
-             // anomalyExplanation = 'Student joined significantly late.';
-        }
     }
-
 
     return {
       id: `attlog-${student.id}-${meeting.id}-${meetingIndex}`,
-      studentId: student.id,
+      studentId: student.id, // This will be the mock user's string ID
       studentName: student.name || student.email,
       studentEmail: student.email,
       meetingId: meeting.id,

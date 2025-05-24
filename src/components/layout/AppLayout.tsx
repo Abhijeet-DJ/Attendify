@@ -1,3 +1,4 @@
+
 'use client';
 import type { ReactNode } from 'react';
 import {
@@ -11,13 +12,13 @@ import {
 import Header from './Header';
 import NavMenu from './NavMenu';
 import Logo from '@/components/shared/Logo';
-import { useUser } from '@clerk/nextjs'; // Using Clerk's useUser
+// import { useUser } from '@clerk/nextjs'; // Clerk removed
 
-// Sign out is handled by Clerk's UserButton, so custom sign out logic is removed.
-
+// This component will be updated to use custom authentication state.
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { user } = useUser(); // Get user from Clerk
-  
+  // const { user } = useUser(); // Clerk removed
+  const user = null; // Placeholder for user data from custom auth
+
   return (
     <SidebarProvider defaultOpen>
       <Sidebar collapsible="icon" className="border-r">
@@ -25,15 +26,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Logo size="md" />
         </SidebarHeader>
         <SidebarContent className="p-2">
-          {/* Pass relevant user information or let NavMenu fetch it internally */}
-          <NavMenu clerkUser={user} /> 
+          <NavMenu customUser={user} /> {/* Pass custom user or role */}
         </SidebarContent>
         <SidebarFooter className="p-2">
-           {/* Logout button is removed as Clerk's UserButton in Header handles this */}
+           {/* Logout button will be added here with custom auth */}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <Header />
+        <Header showSidebarTrigger={true} /> {/* Show sidebar trigger in AppLayout */}
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-background">
           {children}
         </main>

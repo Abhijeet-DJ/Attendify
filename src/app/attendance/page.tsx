@@ -3,97 +3,62 @@
 
 import PageHeader from '@/components/shared/PageHeader';
 import AttendanceTable from '@/components/attendance/AttendanceTable';
-import { useUser, useAuth } from '@clerk/nextjs';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import type { AttendanceLog } from '@/types';
-import { useEffect, useState } from 'react';
+// import { useEffect, useState } from 'react'; // Will be re-added with custom auth
 import Link from 'next/link';
-import { getAttendanceLogsForUser } from '@/app/actions/attendanceActions'; // Updated import
-import { useToast } from '@/hooks/use-toast';
+// import { getAttendanceLogsForUser } from '@/app/actions/attendanceActions';
+// import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
+// This page will be updated to use custom authentication and fetch data.
+// For now, it's a placeholder.
 export default function AttendancePage() {
-  const { user, isLoaded: userLoaded } = useUser();
-  const { isLoaded: authLoaded, isSignedIn } = useAuth();
-  const { toast } = useToast();
-  
-  const [userAttendance, setUserAttendance] = useState<AttendanceLog[]>([]);
-  const [isLoadingLogs, setIsLoadingLogs] = useState(true);
+  // const { toast } = useToast();
+  const userAttendance: AttendanceLog[] = []; // Placeholder
+  const isLoadingLogs = true; // Placeholder
+  const isSignedIn = false; // Placeholder
+  // const isAdmin = false; // Placeholder
 
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  // useEffect(() => {
+  //   // Fetch user logs with custom auth
+  // }, [/* user dependencies from custom auth */]);
 
-  useEffect(() => {
-    const fetchUserLogs = async () => {
-      if (userLoaded && isSignedIn && user?.primaryEmailAddress?.emailAddress) {
-        setIsLoadingLogs(true);
-        try {
-          // Admins on this page see their own logs, like a student.
-          // They use /attendance-management for all logs.
-          const logs = await getAttendanceLogsForUser(user.primaryEmailAddress.emailAddress);
-          setUserAttendance(logs);
-        } catch (error) {
-          console.error("Failed to fetch user's attendance logs:", error);
-          toast({
-            title: "Error Fetching Attendance",
-            description: "Could not retrieve your attendance records.",
-            variant: "destructive",
-          });
-        } finally {
-          setIsLoadingLogs(false);
-        }
-      } else if (userLoaded && !isSignedIn) {
-        setIsLoadingLogs(false); // Not signed in, no logs to load
-      }
-    };
+  if (!isSignedIn && !isLoadingLogs) {
+    return (
+        <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
+            <p className="text-lg font-medium">Access Denied</p>
+            <p className="text-muted-foreground">Please log in to view your attendance.</p>
+            <Button asChild><Link href="/login">Sign In</Link></Button>
+        </div>
+    );
+  }
 
-    fetchUserLogs();
-  }, [user, userLoaded, isSignedIn, toast]);
-
-  if (!authLoaded || !userLoaded || isLoadingLogs) {
+  if (isLoadingLogs) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
       </div>
     );
   }
-
-  if (!isSignedIn) {
-    return (
-        <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
-            <p className="text-lg font-medium">Access Denied</p>
-            <p className="text-muted-foreground">Please log in to view your attendance.</p>
-        </div>
-    );
-  }
   
-  if (isAdmin) {
-     return (
-        <div className="space-y-6">
-        <PageHeader
-            title="My Attendance (Admin View)"
-            description="As an admin, you typically manage all attendance via 'Manage Attendance'. This view shows data as if you were a student (i.e., your own attendance if any)."
-        />
-        <AttendanceTable 
-            data={userAttendance} 
-            isStudentView={true} 
-        />
-        <p className="text-sm text-muted-foreground text-center">
-            To manage all student records, please go to the <Link href="/attendance-management" className="text-primary hover:underline">Manage Attendance</Link> page.
-        </p>
-        </div>
-    );
-  }
+  // if (isAdmin) {
+  //    return ( /* ... admin view ... */ );
+  // }
 
-  // Non-admin, signed-in user view
   return (
     <div className="space-y-6">
       <PageHeader
         title="My Attendance History"
-        description="Review your attendance records for all meetings."
+        description="Review your attendance records. (Functionality pending sign-in)"
       />
       <AttendanceTable 
         data={userAttendance} 
         isStudentView={true} 
       />
+      {userAttendance.length === 0 && !isLoadingLogs && (
+         <p className="text-center text-muted-foreground">No attendance records found. Please sign in.</p>
+      )}
     </div>
   );
 }
