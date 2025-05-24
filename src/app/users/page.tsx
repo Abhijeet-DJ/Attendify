@@ -18,9 +18,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-// import { mockUsers } from '@/lib/mockData'; // No longer using mock data
 import type { UserProfile } from '@/types';
-import { getUsers } from '@/app/actions/userActions'; // Import the new action
+import { getUsers } from '@/app/actions/userActions';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
@@ -104,19 +103,39 @@ export default function UserManagementPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="User Management"
-        description="View and manage user accounts and roles (Admin only)."
+        title="User Database View"
+        description="View user records from the application's MongoDB database (Admin only)."
         actions={
-          <Button onClick={() => handleDemoAction('Add New User')} className="shadow-sm hover:shadow-md transition-shadow">
-            <UserPlus className="mr-2 h-4 w-4" /> Add New User
+          <Button onClick={() => handleDemoAction('Add New User to DB')} className="shadow-sm hover:shadow-md transition-shadow">
+            <UserPlus className="mr-2 h-4 w-4" /> Add User (Demo)
           </Button>
         }
       />
+      <Card className="mt-6 bg-card border-blue-500 border-2 shadow-lg">
+        <CardHeader>
+            <CardTitle className="text-blue-700 dark:text-blue-400">Important: User Management via Clerk</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-foreground">
+            This page displays user data from this application's **MongoDB 'users' collection**. This collection is currently populated by a one-time seed script.
+          </p>
+          <p className="text-sm text-foreground">
+            Actual user authentication, sign-up, profile updates, and deletion are managed by **Clerk**.
+          </p>
+          <p className="text-sm text-foreground">
+            To manage your application's users (invite, delete, change roles recognized by Clerk), please use your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">Clerk Dashboard</a>.
+          </p>
+           <p className="text-xs text-muted-foreground">
+            To have new users who sign up via Clerk automatically appear in this MongoDB table, a webhook synchronization mechanism would need to be implemented.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card className="shadow-lg bg-card">
         <CardHeader>
-          <CardTitle>All Users ({currentUsers.length}) - From Database</CardTitle>
+          <CardTitle>Users in Local Database ({currentUsers.length})</CardTitle>
           <CardDescription>
-            List of users from the database. Actual user management is handled via your Clerk dashboard.
+            List of users from the MongoDB 'users' collection. These are primarily from the initial data seed.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -135,7 +154,6 @@ export default function UserManagementPage() {
                 <TableRow key={dbUser.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell>
                     <Avatar className="h-9 w-9">
-                        {/* dbUser.avatarUrl comes from UserProfile type, which maps to photoURL from seeded data */}
                         <AvatarImage src={dbUser.avatarUrl || dbUser.photoURL || ''} alt={dbUser.name || dbUser.email} data-ai-hint="user avatar" />
                         <AvatarFallback>{getInitials(dbUser.name, dbUser.email)}</AvatarFallback>
                     </Avatar>
@@ -149,10 +167,10 @@ export default function UserManagementPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleDemoAction('Edit User')} title="Edit User">
+                    <Button variant="ghost" size="icon" onClick={() => handleDemoAction('Edit User in DB')} title="Edit User in DB">
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDemoAction('Delete User')} title="Delete User">
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDemoAction('Delete User from DB')} title="Delete User from DB">
                         <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -160,26 +178,12 @@ export default function UserManagementPage() {
               )) : (
                  <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No users found in the database.
+                    No users found in the local database.
                     </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
-       <Card className="mt-6 bg-card">
-        <CardHeader>
-            <CardTitle>User Management - Important Note</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <UsersIcon className="h-16 w-16 text-muted-foreground mb-4" />
-          <p className="text-lg font-medium text-foreground">
-            This page displays user data from your MongoDB 'users' collection.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Actual user creation, editing, role assignment, and deletion are managed through your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Clerk Dashboard</a>. The data here reflects what was seeded or subsequently synced.
-          </p>
         </CardContent>
       </Card>
     </div>
