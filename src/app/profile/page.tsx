@@ -1,15 +1,15 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
-import { useUser } from '@clerk/nextjs'; // Clerk's useUser
+import { useUser } from '@clerk/nextjs'; 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-// import { Button } from '@/components/ui/button'; // Button for explicit link removed
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-// import { ExternalLink } from 'lucide-react'; // No longer needed for the explicit link
+import { Badge } from '@/components/ui/badge';
 
 export default function ProfilePage() {
-  const { user, isLoaded } = useUser(); // Clerk's hook
+  const { user, isLoaded } = useUser(); 
 
   const getInitials = (name: string | null | undefined, fallbackEmail?: string | null) => {
     if (name && name.trim() !== '') return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
@@ -21,6 +21,12 @@ export default function ProfilePage() {
   };
   
   const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+  
+  // Access potential custom attributes from Clerk's public metadata
+  // Assuming you configure these as 'registration_number' and 'teacher_id' in Clerk
+  const registrationNumber = user?.publicMetadata?.registration_number as string | undefined;
+  const teacherId = user?.publicMetadata?.teacher_id as string | undefined;
+
 
   if (!isLoaded) {
     return (
@@ -48,7 +54,21 @@ export default function ProfilePage() {
             <div className="text-center sm:text-left">
               <CardTitle className="text-2xl">{user.fullName || 'User'}</CardTitle>
               <CardDescription>{user.primaryEmailAddress?.emailAddress}</CardDescription>
-              <CardDescription className="mt-1 text-xs">Role: {isAdmin ? 'Administrator' : 'Student'}</CardDescription>
+              <div className="mt-2 space-y-1">
+                <Badge variant={isAdmin ? "default" : "secondary"} className="text-xs">
+                  Role: {isAdmin ? 'Administrator' : 'Student'}
+                </Badge>
+                {registrationNumber && (
+                  <Badge variant="outline" className="text-xs ml-2">
+                    Registration #: {registrationNumber}
+                  </Badge>
+                )}
+                {teacherId && (
+                  <Badge variant="outline" className="text-xs ml-2">
+                    Teacher ID: {teacherId}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -57,16 +77,10 @@ export default function ProfilePage() {
             Your basic profile information is displayed above. 
             To manage your account (e.g., change password, set up 2FA), please use the "Manage account" option available in the user menu by clicking your avatar in the top-right corner of the page.
           </p>
-          {/* 
-            The explicit link to Clerk's hosted profile or an embedded component has been removed.
-            Users should be directed to use the <UserButton /> in the header for profile management.
-            If you decide to embed Clerk's <UserProfile /> component on this page or a dedicated one (e.g. /user-profile),
-            you would uncomment and use the code below, and potentially set NEXT_PUBLIC_CLERK_USER_PROFILE_URL in .env
-            to point to that dedicated page.
-          */}
-          {/* <div className="mt-4 rounded-lg border">
-               <ClerkUserProfile path="/profile" routing="path" />
-          </div> */}
+          <p className="text-xs text-muted-foreground">
+            Note: Registration Number or Teacher ID are typically collected during sign-up via custom fields configured in your Clerk dashboard and may be stored as public metadata.
+            If you also sync this data to this application's local database, it will appear on the admin User Management page.
+          </p>
         </CardContent>
       </Card>
     </div>
