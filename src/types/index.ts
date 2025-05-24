@@ -4,12 +4,16 @@ import type { ObjectId } from 'mongodb';
 // but primary user data will come from Clerk.
 export interface UserProfile {
   _id?: string | ObjectId; 
-  id: string; // Corresponds to Clerk User ID
+  id: string; // Corresponds to Clerk User ID or mock ID for seeded data
   email: string;
   name?: string | null; // Corresponds to Clerk user.fullName
-  role: 'student' | 'admin'; // This will need to be managed via Clerk metadata or app logic
+  role: 'student' | 'admin'; // This is for app-level authorization logic
   avatarUrl?: string | null; // Corresponds to Clerk user.imageUrl
   photoURL?: string | null; // Alias for avatarUrl if needed for consistency
+
+  // New fields for student/teacher IDs
+  registrationNumber?: string | null; // For students
+  teacherId?: string | null;        // For teachers
 }
 
 export interface Meeting {

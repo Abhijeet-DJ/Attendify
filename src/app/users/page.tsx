@@ -7,7 +7,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { Users as UsersIcon, UserPlus, Edit, Trash2 } from 'lucide-react';
+import { Users as UsersIcon, UserPlus, Edit, Trash2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -112,21 +112,24 @@ export default function UserManagementPage() {
         }
       />
       <Card className="mt-6 bg-card border-blue-500 border-2 shadow-lg">
-        <CardHeader>
-            <CardTitle className="text-blue-700 dark:text-blue-400">Important: User Management via Clerk</CardTitle>
+        <CardHeader className="flex flex-row items-start space-x-3">
+            <Info className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
+            <div>
+                <CardTitle className="text-blue-700 dark:text-blue-400">Important: User Management via Clerk</CardTitle>
+                <CardDescription className="text-sm text-foreground/80">
+                    This page displays users from this application's MongoDB 'users' collection (populated by a seed script).
+                </CardDescription>
+            </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-foreground">
-            This page displays user data from this application's **MongoDB 'users' collection**. This collection is currently populated by a one-time seed script.
+            Actual user authentication, sign-up, and core profile management are handled by **Clerk**.
           </p>
           <p className="text-sm text-foreground">
-            Actual user authentication, sign-up, profile updates, and deletion are managed by **Clerk**.
-          </p>
-          <p className="text-sm text-foreground">
-            To manage your application's users (invite, delete, change roles recognized by Clerk), please use your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">Clerk Dashboard</a>.
+            To manage your application's users (invite, delete, change Clerk roles/metadata), please use your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-semibold">Clerk Dashboard</a>.
           </p>
            <p className="text-xs text-muted-foreground">
-            To have new users who sign up via Clerk automatically appear in this MongoDB table, a webhook synchronization mechanism would need to be implemented.
+            To have new users who sign up via Clerk automatically appear in this MongoDB table (along with any custom fields like Registration Number or Teacher ID collected during Clerk sign-up), a webhook synchronization mechanism would need to be implemented between Clerk and this application.
           </p>
         </CardContent>
       </Card>
@@ -145,7 +148,8 @@ export default function UserManagementPage() {
                 <TableHead className="w-[80px]">Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role (DB)</TableHead>
+                <TableHead>App Role (DB)</TableHead>
+                <TableHead>Specific ID (DB)</TableHead>
                 <TableHead className="text-right">Actions (Demo)</TableHead>
               </TableRow>
             </TableHeader>
@@ -166,6 +170,11 @@ export default function UserManagementPage() {
                       {dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1)}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    {dbUser.registrationNumber && <span className="text-xs">Reg: {dbUser.registrationNumber}</span>}
+                    {dbUser.teacherId && <span className="text-xs">Teacher: {dbUser.teacherId}</span>}
+                    {!dbUser.registrationNumber && !dbUser.teacherId && <span className="text-xs text-muted-foreground">N/A</span>}
+                  </TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="icon" onClick={() => handleDemoAction('Edit User in DB')} title="Edit User in DB">
                         <Edit className="h-4 w-4" />
@@ -177,7 +186,7 @@ export default function UserManagementPage() {
                 </TableRow>
               )) : (
                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     No users found in the local database.
                     </TableCell>
                 </TableRow>

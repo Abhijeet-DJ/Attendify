@@ -1,11 +1,11 @@
 import type { AttendanceLog, Meeting, UserProfile, AttendanceStatus, JoinLeaveEvent } from '@/types';
 
 export const mockUsers: UserProfile[] = [
-  { id: 'student1', email: 'alice@example.com', name: 'Alice Wonderland', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=AW' },
-  { id: 'student2', email: 'bob@example.com', name: 'Bob The Builder', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=BB' },
-  { id: 'student3', email: 'charlie@example.com', name: 'Charlie Brown', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=CB' },
-  { id: 'student4', email: 'diana@example.com', name: 'Diana Prince', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=DP' },
-  { id: 'admin1', email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com', name: 'Admin User', role: 'admin', photoURL: 'https://placehold.co/100x100.png?text=AU' },
+  { id: 'student1', email: 'alice@example.com', name: 'Alice Wonderland', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=AW', registrationNumber: 'S1001' },
+  { id: 'student2', email: 'bob@example.com', name: 'Bob The Builder', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=BB', registrationNumber: 'S1002' },
+  { id: 'student3', email: 'charlie@example.com', name: 'Charlie Brown', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=CB', registrationNumber: 'S1003' },
+  { id: 'student4', email: 'diana@example.com', name: 'Diana Prince', role: 'student', photoURL: 'https://placehold.co/100x100.png?text=DP' }, // No registration number for variety
+  { id: 'admin1', email: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com', name: 'Admin User', role: 'admin', photoURL: 'https://placehold.co/100x100.png?text=AU', teacherId: 'T001' },
 ];
 
 export const mockMeetings: Meeting[] = [
