@@ -1,22 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageHeader from '@/components/shared/PageHeader';
 import AnomalyDetectionForm from '@/components/anomaly/AnomalyDetectionForm';
 import AnomalyResultCard from '@/components/anomaly/AnomalyResultCard';
 import type { AttendanceAnomalyInput, AttendanceAnomalyOutput } from '@/types';
 import { detectAttendanceAnomaly } from '@/ai/flows/attendance-anomaly-detection';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FlaskConical } from 'lucide-react';
 
-
 export default function AnomalyDetectionPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -24,11 +23,16 @@ export default function AnomalyDetectionPage() {
   const [analysisResult, setAnalysisResult] = useState<AttendanceAnomalyOutput | null>(null);
   const [currentInput, setCurrentInput] = useState<AttendanceAnomalyInput | null>(null);
 
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
   useEffect(() => {
-    if (!authLoading && !user?.isAdmin) {
-      router.replace('/dashboard'); 
+    if (authLoaded && userLoaded) {
+      if (isSignedIn && !isAdmin) {
+        router.replace('/dashboard'); 
+      }
+      // If not signedIn, Clerk middleware should handle redirection.
     }
-  }, [user, authLoading, router]);
+  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
 
   const handleDetectAnomaly = async (input: AttendanceAnomalyInput) => {
     setIsLoading(true);
@@ -53,17 +57,27 @@ export default function AnomalyDetectionPage() {
     }
   };
 
-  if (authLoading || !user) {
+  if (!authLoaded || !userLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl"/>
       </div>
     );
   }
-  if (!user.isAdmin) {
+
+  if (isSignedIn && !isAdmin) {
      return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
          <p>Access Denied. Redirecting...</p>
+        <LoadingSpinner size="xl" />
+      </div>
+    );
+  }
+  
+  if (!isSignedIn) {
+     return (
+      <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
+         <p>Access Denied. Please sign in.</p>
         <LoadingSpinner size="xl" />
       </div>
     );

@@ -15,22 +15,20 @@ import { Edit3, Eye, AlertTriangle as AnomalyIcon } from 'lucide-react';
 import AttendanceStatusBadge from './AttendanceStatusBadge';
 import OverrideAttendanceDialog from './OverrideAttendanceDialog';
 import ViewAttendanceDetailsDialog from './ViewAttendanceDetailsDialog';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser } from '@clerk/nextjs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface AttendanceTableProps {
   data: AttendanceLog[];
   isStudentView?: boolean;
-  onAttendanceUpdate?: (updatedLog: AttendanceLog) => void; // For admin page to update its state
+  onAttendanceUpdate?: (updatedLog: AttendanceLog) => void;
 }
 
 export default function AttendanceTable({ data, isStudentView = false, onAttendanceUpdate }: AttendanceTableProps) {
-  const { user } = useAuth(); 
+  const { user } = useUser(); 
   const [selectedLogForEdit, setSelectedLogForEdit] = useState<AttendanceLog | null>(null);
   const [selectedLogForView, setSelectedLogForView] = useState<AttendanceLog | null>(null);
   
-  // Use local state for table data if onAttendanceUpdate is not provided (e.g., student view)
-  // Otherwise, parent (admin page) controls data via props.
   const [internalData, setInternalData] = useState<AttendanceLog[]>(data);
 
   useEffect(() => {
@@ -41,15 +39,14 @@ export default function AttendanceTable({ data, isStudentView = false, onAttenda
     if (onAttendanceUpdate) {
       onAttendanceUpdate(updatedLog);
     } else {
-      // Fallback to internal state update if no handler from parent
       setInternalData(prevData => 
         prevData.map(log => log.id === updatedLog.id ? updatedLog : log)
       );
     }
-    setSelectedLogForEdit(null); // Close dialog
+    setSelectedLogForEdit(null);
   };
   
-  const isAdmin = user?.isAdmin ?? false;
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
   const displayData = onAttendanceUpdate ? data : internalData;
 
 
@@ -87,7 +84,7 @@ export default function AttendanceTable({ data, isStudentView = false, onAttenda
                   <Button variant="ghost" size="icon" onClick={() => setSelectedLogForView(log)} title="View Details">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  {!isStudentView && isAdmin && (
+                  {!isStudentView && isAdmin && ( // Only show edit if user is admin (derived from Clerk user)
                     <Button variant="ghost" size="icon" onClick={() => setSelectedLogForEdit(log)} title="Edit Status">
                       <Edit3 className="h-4 w-4" />
                     </Button>

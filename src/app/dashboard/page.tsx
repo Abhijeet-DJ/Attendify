@@ -2,8 +2,8 @@
 
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart, CheckCircle, Clock, Users, AlertTriangle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { BarChart, CheckCircle, Clock, Users, AlertTriangle, ListChecks, FlaskConical } from 'lucide-react';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -19,29 +19,47 @@ const summaryData = {
 };
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && user && !user.isAdmin) {
-      // Redirect non-admins to their specific attendance page
-      router.replace('/attendance'); 
-    }
-  }, [user, loading, router]);
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-  if (loading || !user) { // Show loading if auth state is loading OR if no user (implies redirect is imminent)
+  useEffect(() => {
+    if (authLoaded && userLoaded) {
+      if (isSignedIn && !isAdmin) {
+        // Redirect non-admins to their specific attendance page
+        router.replace('/attendance'); 
+      }
+      // If not signedIn, Clerk middleware should handle redirection.
+    }
+  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
+
+  if (!authLoaded || !userLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl"/>
       </div>
     );
   }
-
-  // If user is loaded and is not an admin, this content won't render due to redirect.
-  // This check is an additional safeguard.
-  if (!user.isAdmin) {
+  
+  // If user is loaded, signed in, but not an admin, they will be redirected by the useEffect.
+  // This check is an additional safeguard or for the brief moment before redirection.
+  if (!isAdmin && isSignedIn) {
      return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
+        <p>Access Denied. Redirecting...</p>
+        <LoadingSpinner size="xl" /> 
+      </div>
+    );
+  }
+
+  // If not signed in, Clerk middleware should have redirected.
+  // If somehow landed here without being signed in and admin, show loading/access denied.
+  if (!isSignedIn) {
+      return (
+      <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
+        <p>Access Denied. Please sign in.</p>
         <LoadingSpinner size="xl" /> 
       </div>
     );

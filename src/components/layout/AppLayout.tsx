@@ -11,28 +11,12 @@ import {
 import Header from './Header';
 import NavMenu from './NavMenu';
 import Logo from '@/components/shared/Logo';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
-import { signOutUser } from '@/lib/firebase/auth'; 
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@clerk/nextjs'; // Using Clerk's useUser
+
+// Sign out is handled by Clerk's UserButton, so custom sign out logic is removed.
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-      toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast({ title: 'Sign Out Failed', description: 'Could not sign out. Please try again.', variant: 'destructive' });
-    }
-  };
+  const { user } = useUser(); // Get user from Clerk
   
   return (
     <SidebarProvider defaultOpen>
@@ -41,15 +25,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Logo size="md" />
         </SidebarHeader>
         <SidebarContent className="p-2">
-          <NavMenu user={user} />
+          {/* Pass relevant user information or let NavMenu fetch it internally */}
+          <NavMenu clerkUser={user} /> 
         </SidebarContent>
         <SidebarFooter className="p-2">
-           <Button variant="ghost" className="w-full justify-start gap-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleSignOut}
-            title="Logout"
-           >
-            <LogOut className="h-4 w-4" />
-            <span className="group-data-[collapsible=icon]:hidden">Logout</span>
-          </Button>
+           {/* Logout button is removed as Clerk's UserButton in Header handles this */}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

@@ -1,12 +1,11 @@
-'use client';
+// This custom hook is no longer needed.
+// Components should directly use hooks from '@clerk/nextjs' such as:
+// import { useAuth, useUser, useSession } from '@clerk/nextjs';
+//
+// Example usage in a component:
+// const { isSignedIn, userId } = useAuth();
+// const { user } = useUser();
+//
+// You can delete this file.
 
-import { useContext } from 'react';
-import { AuthContext } from '@/context/AuthContext';
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export {}; // Add an empty export to make it a module if not deleting immediately.

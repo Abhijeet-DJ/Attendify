@@ -3,7 +3,7 @@
 import PageHeader from '@/components/shared/PageHeader';
 import AttendanceTable from '@/components/attendance/AttendanceTable';
 import { mockAttendanceLogs } from '@/lib/mockData';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -12,16 +12,21 @@ import { FileText } from 'lucide-react';
 import type { AttendanceLog } from '@/types';
 
 export default function AttendanceManagementPage() {
-  const { user, loading } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const [currentLogs, setCurrentLogs] = useState<AttendanceLog[]>(mockAttendanceLogs);
 
-  useEffect(() => {
-    if (!loading && !user?.isAdmin) {
-      router.replace('/attendance'); 
-    }
-  }, [user, loading, router]);
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
+  useEffect(() => {
+    if (authLoaded && userLoaded) {
+      if (isSignedIn && !isAdmin) {
+        router.replace('/attendance'); 
+      }
+      // If not signedIn, Clerk middleware should handle redirection.
+    }
+  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
 
   const handleAttendanceUpdate = (updatedLog: AttendanceLog) => {
     setCurrentLogs(prevLogs => 
@@ -29,7 +34,7 @@ export default function AttendanceManagementPage() {
     );
   };
 
-  if (loading || !user) { // Added !user check
+  if (!authLoaded || !userLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
@@ -37,7 +42,7 @@ export default function AttendanceManagementPage() {
     );
   }
   
-  if (!user.isAdmin) { // Explicit check after loading and user exist
+  if (isSignedIn && !isAdmin) {
      return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <p>Access Denied. Redirecting...</p>
@@ -45,6 +50,15 @@ export default function AttendanceManagementPage() {
       </div>
     );
   }
+
+  if (!isSignedIn) {
+    return (
+     <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
+        <p>Access Denied. Please sign in.</p>
+       <LoadingSpinner size="xl" />
+     </div>
+   );
+ }
 
 
   const handleExportCSV = () => {

@@ -3,30 +3,34 @@
 import PageHeader from '@/components/shared/PageHeader';
 import AttendanceTable from '@/components/attendance/AttendanceTable';
 import { mockAttendanceLogs } from '@/lib/mockData'; 
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import type { AttendanceLog } from '@/types';
 import { useEffect, useState } from 'react';
 
 export default function AttendancePage() {
-  const { user, loading } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const [userAttendance, setUserAttendance] = useState<AttendanceLog[]>([]);
 
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
   useEffect(() => {
-    if (user && !loading) {
-      // Non-admin users see their own attendance
-      if (!user.isAdmin) {
-        const filteredLogs = mockAttendanceLogs.filter(log => log.studentEmail === user.email);
+    if (userLoaded && isSignedIn) {
+      if (!isAdmin && user?.primaryEmailAddress?.emailAddress) {
+        // Non-admin users see their own attendance
+        const filteredLogs = mockAttendanceLogs.filter(log => log.studentEmail === user.primaryEmailAddress?.emailAddress);
         setUserAttendance(filteredLogs);
-      } else {
-        // Admins redirected to attendance-management, this page is student-focused
-        // But if an admin lands here, show all for safety, though NavMenu shouldn't lead them here with "My Attendance"
-         setUserAttendance(mockAttendanceLogs);
+      } else if (isAdmin && user?.primaryEmailAddress?.emailAddress) {
+        // Admins on this page (intended for "My Attendance") see their own logs if any exist,
+        // or an empty table. They should use /attendance-management for all logs.
+        const adminOwnLogs = mockAttendanceLogs.filter(log => log.studentEmail === user.primaryEmailAddress?.emailAddress);
+        setUserAttendance(adminOwnLogs);
       }
     }
-  }, [user, loading]);
+  }, [user, userLoaded, isSignedIn, isAdmin]);
 
-  if (loading) {
+  if (!authLoaded || !userLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
@@ -34,28 +38,28 @@ export default function AttendancePage() {
     );
   }
 
-  if (!user) {
-    // This case should ideally be handled by AppShell redirecting to login
+  if (!isSignedIn) {
+    // This case should ideally be handled by Clerk middleware redirecting to login
     return <p className="p-6 text-center">Please log in to view your attendance.</p>;
   }
   
-  // If user is admin and somehow lands here, they should be using /attendance-management
-  // This page is intended for "My Attendance"
-  if (user.isAdmin) {
+  if (isAdmin) {
      return (
         <div className="space-y-6">
         <PageHeader
             title="My Attendance (Admin View)"
-            description="As an admin, you typically manage attendance via 'Manage Attendance'. This view shows data as a student would see it if they were also an admin."
+            description="As an admin, you typically manage all attendance via 'Manage Attendance'. This view shows data as if you were a student."
         />
         <AttendanceTable 
-            data={mockAttendanceLogs.filter(log => log.studentEmail === user.email)} // Show admin's "own" logs if any
+            data={userAttendance} // Shows admin's "own" logs if any
             isStudentView={true} 
         />
+        <p className="text-sm text-muted-foreground text-center">
+            To manage all student records, please go to the <Link href="/attendance-management" className="text-primary hover:underline">Manage Attendance</Link> page.
+        </p>
         </div>
     );
   }
-
 
   return (
     <div className="space-y-6">

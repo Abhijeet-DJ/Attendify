@@ -2,30 +2,37 @@
 
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Construction, Settings as SettingsIcon } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, loading } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user?.isAdmin) {
-      router.replace('/dashboard'); 
-    }
-  }, [user, loading, router]);
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-  if (loading || !user) {
+  useEffect(() => {
+     if (authLoaded && userLoaded) {
+      if (isSignedIn && !isAdmin) {
+        router.replace('/dashboard'); 
+      }
+      // If not signedIn, Clerk middleware should handle redirection.
+    }
+  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
+
+  if (!authLoaded || !userLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
       </div>
     );
   }
-   if (!user.isAdmin) {
+
+   if (isSignedIn && !isAdmin) {
      return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
          <p>Access Denied. Redirecting...</p>
@@ -33,6 +40,15 @@ export default function SettingsPage() {
       </div>
     );
   }
+  
+  if (!isSignedIn) {
+    return (
+     <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
+        <p>Access Denied. Please sign in.</p>
+       <LoadingSpinner size="xl" />
+     </div>
+   );
+ }
 
 
   return (

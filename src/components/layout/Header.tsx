@@ -1,9 +1,10 @@
 'use client';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import UserNav from './UserNav';
 import Logo from '@/components/shared/Logo';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton } from '@clerk/nextjs';
+import { Button } from '@/components/ui/button';
 
 export default function Header() {
   const isMobile = useIsMobile();
@@ -14,7 +15,17 @@ export default function Header() {
         {isMobile && <Logo size="sm" />}
       </div>
       <div className="flex items-center gap-4">
-        <UserNav />
+        <SignedIn>
+          <UserButton afterSignOutUrl="/" />
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <Button variant="outline" size="sm">Sign In</Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button size="sm">Sign Up</Button>
+          </SignUpButton>
+        </SignedOut>
       </div>
     </header>
   );

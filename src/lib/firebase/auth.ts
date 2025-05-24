@@ -1,42 +1,6 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  type UserCredential,
-  type AuthError,
-} from 'firebase/auth';
-import { auth } from './config';
-import type { LoginFormData } from '@/components/auth/LoginForm';
-import type { SignupFormData } from '@/components/auth/SignupForm';
+// This file is no longer needed as Clerk handles authentication.
+// You can delete this file.
+// If other Firebase services (like Firestore, Storage) were used here,
+// those would need to be kept or refactored. But for auth, it's replaced.
 
-
-export const signInWithEmail = async ({ email, password }: LoginFormData): Promise<UserCredential> => {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential;
-  } catch (error) {
-    // console.error('Error signing in with email and password', error);
-    throw error as AuthError;
-  }
-};
-
-export const signUpWithEmail = async ({ email, password }: SignupFormData): Promise<UserCredential> => {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    // You might want to set displayName here if collecting it during signup
-    // await updateProfile(userCredential.user, { displayName: fullName });
-    return userCredential;
-  } catch (error) {
-    // console.error('Error signing up with email and password', error);
-    throw error as AuthError;
-  }
-};
-
-export const signOutUser = async (): Promise<void> => {
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.error('Error signing out', error);
-    throw error as AuthError;
-  }
-};
+export {}; // Add an empty export to make it a module if not deleting immediately.

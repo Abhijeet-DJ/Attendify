@@ -15,27 +15,27 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import type { UserContextType } from '@/context/AuthContext';
+import type { UserResource } from '@clerk/types'; // Import Clerk's UserResource type
 
 interface NavMenuProps {
-  user: UserContextType | null;
+  clerkUser: UserResource | null | undefined; // Use Clerk's user type
 }
 
-export default function NavMenu({ user }: NavMenuProps) {
+export default function NavMenu({ clerkUser }: NavMenuProps) {
   const pathname = usePathname();
-  const isAdmin = user?.isAdmin ?? false;
+  
+  // Determine admin status based on Clerk user's email and environment variable
+  const isAdmin = clerkUser?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
   const baseItems = [
     { href: '/profile', label: 'Profile', icon: UserCircle },
   ];
 
-  // Student items (default if not admin)
   let menuItems = [
     { href: '/attendance', label: 'My Attendance', icon: ListChecks },
     ...baseItems,
   ];
 
-  // Admin items
   if (isAdmin) {
     menuItems = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

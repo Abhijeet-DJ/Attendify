@@ -2,7 +2,7 @@
 
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
@@ -22,20 +22,26 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UserManagementPage() {
-  const { user, loading } = useAuth();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
   useEffect(() => {
-    if (!loading && !user?.isAdmin) {
-      router.replace('/dashboard'); 
+    if (authLoaded && userLoaded) {
+      if (isSignedIn && !isAdmin) {
+        router.replace('/dashboard'); 
+      }
+      // If not signedIn, Clerk middleware should handle redirection.
     }
-  }, [user, loading, router]);
+  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
 
   const handleDemoAction = (actionName: string) => {
     toast({
       title: "Demo Feature",
-      description: `${actionName} functionality is not implemented in this demo.`,
+      description: `${actionName} functionality is not implemented in this demo. User management should be done via the Clerk dashboard.`,
     });
   };
   
@@ -45,15 +51,14 @@ export default function UserManagementPage() {
     return namePart.substring(0, 2).toUpperCase();
   };
 
-
-  if (loading || !user) {
+  if (!authLoaded || !userLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
       </div>
     );
   }
-  if (!user.isAdmin) {
+  if (isSignedIn && !isAdmin) {
      return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <p>Access Denied. Redirecting...</p>
@@ -61,6 +66,16 @@ export default function UserManagementPage() {
       </div>
     );
   }
+  
+  if (!isSignedIn) {
+    return (
+     <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
+        <p>Access Denied. Please sign in.</p>
+       <LoadingSpinner size="xl" />
+     </div>
+   );
+ }
+
 
   return (
     <div className="space-y-6">
@@ -75,9 +90,9 @@ export default function UserManagementPage() {
       />
       <Card className="shadow-lg bg-card">
         <CardHeader>
-          <CardTitle>All Users ({mockUsers.length})</CardTitle>
+          <CardTitle>All Users ({mockUsers.length}) - Mock Data</CardTitle>
           <CardDescription>
-            List of all registered users in Attendify.
+            List of mock users. Actual user management is handled via your Clerk dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -87,8 +102,8 @@ export default function UserManagementPage() {
                 <TableHead className="w-[80px]">Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Role (Mock)</TableHead>
+                <TableHead className="text-right">Actions (Demo)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,7 +147,7 @@ export default function UserManagementPage() {
             This page uses mock data for demonstration.
           </p>
           <p className="text-sm text-muted-foreground">
-            Actual user creation, editing, role assignment, and deletion functionalities require backend integration and are not implemented in this frontend demo.
+            Actual user creation, editing, role assignment, and deletion are managed through your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Clerk Dashboard</a>.
           </p>
         </CardContent>
       </Card>

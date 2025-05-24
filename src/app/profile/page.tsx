@@ -1,76 +1,28 @@
-
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, UserProfile as ClerkUserProfile } from '@clerk/nextjs'; // Clerk's useUser
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect, type FormEvent } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { useToast } from '@/hooks/use-toast';
-import { updateProfile as firebaseUpdateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config'; 
-import type { UserContextType } from '@/context/AuthContext';
+import { ExternalLink } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user, loading, setUser: updateUserInContext } = useAuth();
-  const { toast } = useToast();
-  const [displayName, setDisplayName] = useState('');
-  const [photoURL, setPhotoURL] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, isLoaded } = useUser(); // Clerk's hook
 
-  useEffect(() => {
-    if (user) {
-      setDisplayName(user.displayName || '');
-      setPhotoURL(user.photoURL || '');
-    }
-  }, [user]);
-
-  const getInitials = (name: string | null | undefined, email: string | null | undefined) => {
+  const getInitials = (name: string | null | undefined, fallbackEmail?: string | null) => {
     if (name && name.trim() !== '') return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
-    if (email) {
-        const namePart = email.split('@')[0];
+    if (fallbackEmail) {
+        const namePart = fallbackEmail.split('@')[0];
         return namePart.substring(0, 2).toUpperCase();
     }
     return 'U';
   };
+  
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-  const handleProfileUpdate = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!auth.currentUser) {
-        toast({ title: 'Error', description: 'Not authenticated.', variant: 'destructive' });
-        return;
-    }
-    if (!user) { // Ensure user context is available
-        toast({ title: 'Error', description: 'User data not available in context.', variant: 'destructive' });
-        return;
-    }
-
-    setIsSubmitting(true);
-    try {
-        await firebaseUpdateProfile(auth.currentUser, { displayName, photoURL });
-        
-        // Update user in context
-        const updatedUser: UserContextType = { 
-            ...user, 
-            displayName: displayName, 
-            photoURL: photoURL 
-        };
-        updateUserInContext(updatedUser);
-
-        toast({ title: 'Profile Updated', description: 'Your profile has been updated.' });
-    } catch (error: any) {
-        console.error('Error updating profile:', error);
-        toast({ title: 'Update Failed', description: error.message || 'Could not update profile.', variant: 'destructive' });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
@@ -79,61 +31,48 @@ export default function ProfilePage() {
   }
 
   if (!user) {
-    // Should be redirected by AppShell, but as a fallback:
+    // Should be redirected by Clerk middleware if route is protected
     return <p className="p-6 text-center">Please log in to view your profile.</p>;
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="My Profile" description="View and manage your account details." />
+      <PageHeader title="My Profile" description="View your account details." />
       <Card className="mx-auto max-w-2xl shadow-lg bg-card">
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
             <Avatar className="h-24 w-24">
-              <AvatarImage src={photoURL || user.photoURL || ''} alt={displayName || user.displayName || user.email || 'User'} data-ai-hint="user portrait professional" />
-              <AvatarFallback>{getInitials(displayName || user.displayName, user.email)}</AvatarFallback>
+              <AvatarImage src={user.imageUrl || ''} alt={user.fullName || user.primaryEmailAddress?.emailAddress || 'User'} data-ai-hint="user portrait professional" />
+              <AvatarFallback>{getInitials(user.fullName, user.primaryEmailAddress?.emailAddress)}</AvatarFallback>
             </Avatar>
             <div className="text-center sm:text-left">
-              <CardTitle className="text-2xl">{displayName || user.displayName || 'User'}</CardTitle>
-              <CardDescription>{user.email}</CardDescription>
-              <CardDescription className="mt-1 text-xs">Role: {user.isAdmin ? 'Administrator' : 'Student'}</CardDescription>
+              <CardTitle className="text-2xl">{user.fullName || 'User'}</CardTitle>
+              <CardDescription>{user.primaryEmailAddress?.emailAddress}</CardDescription>
+              <CardDescription className="mt-1 text-xs">Role: {isAdmin ? 'Administrator' : 'Student'}</CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleProfileUpdate} className="space-y-6">
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" value={user.email || ''} disabled className="mt-1 bg-muted/50 cursor-not-allowed" />
-              <p className="text-sm text-muted-foreground mt-1">Email address cannot be changed.</p>
-            </div>
-            <div>
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input
-                id="displayName"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your Full Name"
-                className="mt-1"
-              />
-            </div>
-             <div>
-              <Label htmlFor="photoURL">Photo URL</Label>
-              <Input
-                id="photoURL"
-                type="url"
-                value={photoURL}
-                onChange={(e) => setPhotoURL(e.target.value)}
-                placeholder="https://example.com/your-image.png"
-                className="mt-1"
-              />
-            </div>
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
-              {isSubmitting ? <LoadingSpinner size="sm" className="mr-2" /> : null}
-              Save Changes
-            </Button>
-          </form>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Your profile information is managed by Clerk.
+          </p>
+          <div>
+            {/* Option 1: Link to Clerk's hosted profile page */}
+             <Button asChild className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
+               <a href={process.env.NEXT_PUBLIC_CLERK_USER_PROFILE_URL || '/user'} target="_blank" rel="noopener noreferrer">
+                 Manage Profile on Clerk <ExternalLink className="ml-2 h-4 w-4" />
+               </a>
+             </Button>
+             <p className="text-xs text-muted-foreground mt-1"> (Opens Clerk's profile management page)</p>
+            
+            {/* Option 2: Embed Clerk's <UserProfile /> component if preferred 
+                This requires `NEXT_PUBLIC_CLERK_USER_PROFILE_URL` to be set in .env usually.
+                If you want to embed it here:
+            */}
+            {/* <div className="mt-4 rounded-lg border">
+                 <ClerkUserProfile path="/profile" routing="path" />
+            </div> */}
+          </div>
         </CardContent>
       </Card>
     </div>
