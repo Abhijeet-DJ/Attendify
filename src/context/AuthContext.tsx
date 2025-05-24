@@ -1,8 +1,9 @@
+
 'use client';
 
 import type { User as FirebaseUser } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
-import type { ReactNode } from 'react';
+import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import { createContext, useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase/config';
 
@@ -10,20 +11,22 @@ export interface UserContextType {
   id: string;
   email: string | null;
   displayName: string | null;
-  photoURL?: string | null; 
-  isAdmin?: boolean; 
+  photoURL?: string | null;
+  isAdmin?: boolean;
 }
 
 interface AuthContextProps {
   user: UserContextType | null;
   loading: boolean;
   error: Error | null;
+  setUser: Dispatch<SetStateAction<UserContextType | null>>;
 }
 
 export const AuthContext = createContext<AuthContextProps>({
   user: null,
   loading: true,
   error: null,
+  setUser: () => {}, // Default no-op function
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -61,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error }}>
+    <AuthContext.Provider value={{ user, loading, error, setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
@@ -7,15 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { updateProfile as firebaseUpdateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config'; // Import auth object
-import { UserContextType } from '@/context/AuthContext';
+import { auth } from '@/lib/firebase/config'; 
+import type { UserContextType } from '@/context/AuthContext';
 
 export default function ProfilePage() {
-  const { user, loading, setUser: updateUserInContext } = useAuth() as any; // Add setUser to useAuth if not present or handle state update differently
+  const { user, loading, setUser: updateUserInContext } = useAuth();
   const { toast } = useToast();
   const [displayName, setDisplayName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
@@ -37,21 +38,28 @@ export default function ProfilePage() {
     return 'U';
   };
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
+  const handleProfileUpdate = async (e: FormEvent) => {
     e.preventDefault();
     if (!auth.currentUser) {
         toast({ title: 'Error', description: 'Not authenticated.', variant: 'destructive' });
         return;
     }
+    if (!user) { // Ensure user context is available
+        toast({ title: 'Error', description: 'User data not available in context.', variant: 'destructive' });
+        return;
+    }
+
     setIsSubmitting(true);
     try {
         await firebaseUpdateProfile(auth.currentUser, { displayName, photoURL });
         
-        // Update user in context if setUser is available
-        if (updateUserInContext) {
-            const updatedUser: UserContextType = { ...user, displayName, photoURL };
-            updateUserInContext(updatedUser);
-        }
+        // Update user in context
+        const updatedUser: UserContextType = { 
+            ...user, 
+            displayName: displayName, 
+            photoURL: photoURL 
+        };
+        updateUserInContext(updatedUser);
 
         toast({ title: 'Profile Updated', description: 'Your profile has been updated.' });
     } catch (error: any) {
