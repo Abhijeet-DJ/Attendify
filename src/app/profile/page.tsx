@@ -1,12 +1,12 @@
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
-import { useUser, UserProfile as ClerkUserProfile } from '@clerk/nextjs'; // Clerk's useUser
+import { useUser } from '@clerk/nextjs'; // Clerk's useUser
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // Button for explicit link removed
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { ExternalLink } from 'lucide-react';
+// import { ExternalLink } from 'lucide-react'; // No longer needed for the explicit link
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser(); // Clerk's hook
@@ -54,25 +54,19 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Your profile information is managed by Clerk.
+            Your basic profile information is displayed above. 
+            To manage your account (e.g., change password, set up 2FA), please use the "Manage account" option available in the user menu by clicking your avatar in the top-right corner of the page.
           </p>
-          <div>
-            {/* Option 1: Link to Clerk's hosted profile page */}
-             <Button asChild className="w-full sm:w-auto shadow-sm hover:shadow-md transition-shadow">
-               <a href={process.env.NEXT_PUBLIC_CLERK_USER_PROFILE_URL || '/user'} target="_blank" rel="noopener noreferrer">
-                 Manage Profile on Clerk <ExternalLink className="ml-2 h-4 w-4" />
-               </a>
-             </Button>
-             <p className="text-xs text-muted-foreground mt-1"> (Opens Clerk's profile management page)</p>
-            
-            {/* Option 2: Embed Clerk's <UserProfile /> component if preferred 
-                This requires `NEXT_PUBLIC_CLERK_USER_PROFILE_URL` to be set in .env usually.
-                If you want to embed it here:
-            */}
-            {/* <div className="mt-4 rounded-lg border">
-                 <ClerkUserProfile path="/profile" routing="path" />
-            </div> */}
-          </div>
+          {/* 
+            The explicit link to Clerk's hosted profile or an embedded component has been removed.
+            Users should be directed to use the <UserButton /> in the header for profile management.
+            If you decide to embed Clerk's <UserProfile /> component on this page or a dedicated one (e.g. /user-profile),
+            you would uncomment and use the code below, and potentially set NEXT_PUBLIC_CLERK_USER_PROFILE_URL in .env
+            to point to that dedicated page.
+          */}
+          {/* <div className="mt-4 rounded-lg border">
+               <ClerkUserProfile path="/profile" routing="path" />
+          </div> */}
         </CardContent>
       </Card>
     </div>
