@@ -1,6 +1,9 @@
+import type { ObjectId } from 'mongodb';
+
 // UserProfile might still be useful for mock data or app-specific user representations,
 // but primary user data will come from Clerk.
 export interface UserProfile {
+  _id?: string | ObjectId; 
   id: string; // Corresponds to Clerk User ID
   email: string;
   name?: string | null; // Corresponds to Clerk user.fullName
@@ -10,7 +13,8 @@ export interface UserProfile {
 }
 
 export interface Meeting {
-  id: string;
+  _id?: string | ObjectId;
+  id: string; // Custom ID, could be zoom meeting ID
   name: string;
   date: string; // ISO string format
   startTime: string; // e.g., "10:00 AM"
@@ -20,11 +24,12 @@ export interface Meeting {
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Excused' | 'Partial';
 
 export interface AttendanceLog {
-  id: string;
+  _id?: string | ObjectId;
+  id: string; // Custom unique ID for the log entry
   studentId: string; // Could be Clerk User ID
   studentName: string;
   studentEmail?: string;
-  meetingId: string;
+  meetingId: string; // Relates to Meeting.id
   meetingName: string;
   date: string; // ISO string format of meeting date
   joinTime?: string | null; // ISO string format
@@ -38,6 +43,8 @@ export interface AttendanceLog {
 }
 
 export interface JoinLeaveEvent {
+  // Note: If these become separate documents or need individual manipulation, they might need their own _id.
+  // For now, as embedded objects, they don't need a MongoDB _id.
   timestamp: string; // ISO string format
   type: 'join' | 'leave';
 }
@@ -54,5 +61,4 @@ export interface AttendanceAnomalyOutput {
   explanation: string;
 }
 
-// No longer need AuthUser from custom AuthContext.
 // Import Clerk types directly if needed, e.g. import type { UserResource } from '@clerk/types';
