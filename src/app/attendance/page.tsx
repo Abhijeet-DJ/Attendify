@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
@@ -7,6 +8,7 @@ import { useUser, useAuth } from '@clerk/nextjs';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import type { AttendanceLog } from '@/types';
 import { useEffect, useState } from 'react';
+import Link from 'next/link'; // Added missing import
 
 export default function AttendancePage() {
   const { user, isLoaded: userLoaded } = useUser();
@@ -40,7 +42,15 @@ export default function AttendancePage() {
 
   if (!isSignedIn) {
     // This case should ideally be handled by Clerk middleware redirecting to login
-    return <p className="p-6 text-center">Please log in to view your attendance.</p>;
+    // Or by the <SignedOut> component in the layout.
+    // Showing a clear message here is a good fallback.
+    return (
+        <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
+            <p className="text-lg font-medium">Access Denied</p>
+            <p className="text-muted-foreground">Please log in to view your attendance.</p>
+            {/* Optionally, add a SignInButton here if desired for direct action */}
+        </div>
+    );
   }
   
   if (isAdmin) {
@@ -61,6 +71,7 @@ export default function AttendancePage() {
     );
   }
 
+  // Non-admin, signed-in user view
   return (
     <div className="space-y-6">
       <PageHeader

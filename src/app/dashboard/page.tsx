@@ -1,10 +1,11 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BarChart, CheckCircle, Clock, Users, AlertTriangle, ListChecks, FlaskConical } from 'lucide-react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Kept for potential future use, but direct redirect removed
 import { useEffect } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import Link from 'next/link';
@@ -21,19 +22,22 @@ const summaryData = {
 export default function DashboardPage() {
   const { user, isLoaded: userLoaded } = useUser();
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
-  const router = useRouter();
+  // const router = useRouter(); // No longer immediately redirecting from this page based on role
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
-  useEffect(() => {
-    if (authLoaded && userLoaded) {
-      if (isSignedIn && !isAdmin) {
-        // Redirect non-admins to their specific attendance page
-        router.replace('/attendance'); 
-      }
-      // If not signedIn, Clerk middleware should handle redirection.
-    }
-  }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
+  // Effect to redirect non-admins is removed. 
+  // Access control is primarily handled by:
+  // 1. Middleware (protecting the route)
+  // 2. NavMenu (not showing the link to non-admins)
+  // 3. Conditional rendering within this page (showing "Access Denied" message)
+  // useEffect(() => {
+  //   if (authLoaded && userLoaded) {
+  //     if (isSignedIn && !isAdmin) {
+  //       // router.replace('/attendance'); 
+  //     }
+  //   }
+  // }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
 
   if (!authLoaded || !userLoaded) {
     return (
@@ -43,28 +47,32 @@ export default function DashboardPage() {
     );
   }
   
-  // If user is loaded, signed in, but not an admin, they will be redirected by the useEffect.
-  // This check is an additional safeguard or for the brief moment before redirection.
-  if (!isAdmin && isSignedIn) {
-     return (
-      <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
-        <p>Access Denied. Redirecting...</p>
-        <LoadingSpinner size="xl" /> 
+  if (!isSignedIn) {
+    // This should ideally be caught by middleware.
+    return (
+      <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
+         <p className="text-lg font-medium">Access Denied</p>
+         <p className="text-muted-foreground">Please sign in to view the dashboard.</p>
       </div>
     );
   }
 
-  // If not signed in, Clerk middleware should have redirected.
-  // If somehow landed here without being signed in and admin, show loading/access denied.
-  if (!isSignedIn) {
-      return (
-      <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
-        <p>Access Denied. Please sign in.</p>
-        <LoadingSpinner size="xl" /> 
+  if (!isAdmin) {
+    // Non-admin signed-in users should not see the dashboard.
+    // NavMenu prevents navigation here. If they land here directly, show access denied.
+     return (
+      <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col items-center justify-center space-y-4 p-6 text-center">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <p className="text-lg font-medium">Access Denied</p>
+        <p className="text-muted-foreground">You do not have permission to view this page.</p>
+        <Button asChild variant="outline">
+            <Link href="/attendance">Go to My Attendance</Link>
+        </Button>
       </div>
     );
   }
   
+  // User is signed in and is an admin
   return (
     <div className="space-y-6">
       <PageHeader
