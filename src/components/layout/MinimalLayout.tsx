@@ -1,9 +1,4 @@
-import type { ReactNode } from 'react';
 
-export default function MinimalLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      {children}
-    </div>
-  );
-}
+// This component is no longer used and can be deleted.
+// AppShell now manages layouts for public and authenticated states.
+export {};
