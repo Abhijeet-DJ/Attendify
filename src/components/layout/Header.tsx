@@ -1,0 +1,21 @@
+'use client';
+
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import UserNav from './UserNav';
+import Logo from '@/components/shared/Logo';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+export default function Header() {
+  const isMobile = useIsMobile();
+  return (
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-md sm:px-6 md:px-8">
+      <div className="flex items-center gap-4">
+        <SidebarTrigger />
+        {isMobile && <Logo size="sm" />}
+      </div>
+      <div className="flex items-center gap-4">
+        <UserNav />
+      </div>
+    </header>
+  );
+}
