@@ -4,9 +4,11 @@
 import PageHeader from '@/components/shared/PageHeader';
 import { useUser } from '@clerk/nextjs'; 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Badge } from '@/components/ui/badge';
+import { parseClerkUsername, type ParsedClerkUsername } from '@/lib/utils';
+import { InfoIcon } from 'lucide-react';
 
 export default function ProfilePage() {
   const { user, isLoaded } = useUser(); 
@@ -22,11 +24,10 @@ export default function ProfilePage() {
   
   const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
   
-  // Access potential custom attributes from Clerk's public metadata
-  // Assuming you configure these as 'registration_number' and 'teacher_id' in Clerk
-  const registrationNumber = user?.publicMetadata?.registration_number as string | undefined;
-  const teacherId = user?.publicMetadata?.teacher_id as string | undefined;
-
+  let parsedUsernameData: ParsedClerkUsername = { parsedFullName: null, extractedId: null };
+  if (isLoaded && user) {
+    parsedUsernameData = parseClerkUsername(user.username);
+  }
 
   if (!isLoaded) {
     return (
@@ -54,34 +55,58 @@ export default function ProfilePage() {
             <div className="text-center sm:text-left">
               <CardTitle className="text-2xl">{user.fullName || 'User'}</CardTitle>
               <CardDescription>{user.primaryEmailAddress?.emailAddress}</CardDescription>
-              <div className="mt-2 space-y-1">
+              <div className="mt-2">
                 <Badge variant={isAdmin ? "default" : "secondary"} className="text-xs">
-                  Role: {isAdmin ? 'Administrator' : 'Student'}
+                  Role: {isAdmin ? 'Administrator' : 'Student/Teacher (based on ID)'}
                 </Badge>
-                {registrationNumber && (
-                  <Badge variant="outline" className="text-xs ml-2">
-                    Registration #: {registrationNumber}
-                  </Badge>
-                )}
-                {teacherId && (
-                  <Badge variant="outline" className="text-xs ml-2">
-                    Teacher ID: {teacherId}
-                  </Badge>
-                )}
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Your basic profile information is displayed above. 
-            To manage your account (e.g., change password, set up 2FA), please use the "Manage account" option available in the user menu by clicking your avatar in the top-right corner of the page.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Note: Registration Number or Teacher ID are typically collected during sign-up via custom fields configured in your Clerk dashboard and may be stored as public metadata.
-            If you also sync this data to this application's local database, it will appear on the admin User Management page.
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">Clerk Username:</h3>
+            <p className="text-sm text-foreground">{user.username || 'Not set'}</p>
+          </div>
+
+          {parsedUsernameData.parsedFullName && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">Parsed Full Name (from Username):</h3>
+              <p className="text-sm text-foreground">{parsedUsernameData.parsedFullName}</p>
+            </div>
+          )}
+          {parsedUsernameData.extractedId && (
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">Extracted ID (from Username):</h3>
+              <p className="text-sm text-foreground">{parsedUsernameData.extractedId}</p>
+               <p className="text-xs text-muted-foreground mt-1">
+                (This ID is assumed to be your Registration Number if you are a student, or Teacher ID if you are a teacher).
+              </p>
+            </div>
+          )}
+          
+          <p className="text-sm text-muted-foreground pt-2">
+            Your basic profile information from Clerk is displayed above. 
+            To manage your account settings (e.g., change password, set up 2FA), please use the "Manage account" option available in the user menu by clicking your avatar in the top-right corner of the page.
           </p>
         </CardContent>
+        <CardFooter className="flex-col items-start text-xs text-muted-foreground bg-muted/50 p-4 rounded-b-lg">
+            <div className="flex items-start">
+                <InfoIcon className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0 text-blue-500"/>
+                <div>
+                    <p className="font-semibold text-foreground">Username Convention for ID Extraction:</p>
+                    <p>
+                        For this application to extract a Registration/Teacher ID, your Clerk <span className="font-semibold">Username</span> should be set in the format: <span className="italic">YourFullName_YourID</span>.
+                    </p>
+                    <p className="mt-1">
+                        Example for a student: <span className="italic">JohnDoe_S12345</span>. Example for a teacher: <span className="italic">JaneSmith_T987</span>.
+                    </p>
+                    <p className="mt-1">
+                        You can typically set or update your username via the "Manage account" option in the user menu (top-right).
+                    </p>
+                </div>
+            </div>
+        </CardFooter>
       </Card>
     </div>
   );
