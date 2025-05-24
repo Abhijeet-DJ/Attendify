@@ -1,45 +1,64 @@
+
 'use server';
 import { connectToDatabase } from '@/lib/mongodb';
 import type { AttendanceLog } from '@/types';
+import type { ObjectId } from 'mongodb';
 
 export async function getAttendanceLogs(): Promise<AttendanceLog[]> {
   try {
     const { db } = await connectToDatabase();
     const logs = await db
-      .collection<AttendanceLog>('attendanceLogs')
+      .collection('attendanceLogs')
       .find({})
-      .sort({ date: -1, studentName: 1 }) // Example sort
+      .sort({ date: -1, studentName: 1 }) 
       .toArray();
     
-    // Convert ObjectId to string for client-side compatibility
     return logs.map(log => ({
       ...log,
-      _id: log._id?.toString(),
+      _id: (log._id as ObjectId)?.toString(),
     })) as AttendanceLog[];
   } catch (error) {
-    console.error('Error fetching attendance logs:', error);
-    // In a real app, you might want to throw a custom error or return an object indicating failure
+    console.error('Error fetching all attendance logs:', error);
     return []; 
   }
 }
 
+export async function getAttendanceLogsForUser(userEmail: string): Promise<AttendanceLog[]> {
+  if (!userEmail) {
+    console.warn('Attempted to fetch logs for an undefined user email.');
+    return [];
+  }
+  try {
+    const { db } = await connectToDatabase();
+    const logs = await db
+      .collection('attendanceLogs')
+      .find({ studentEmail: userEmail })
+      .sort({ date: -1 })
+      .toArray();
+    
+    return logs.map(log => ({
+      ...log,
+      _id: (log._id as ObjectId)?.toString(),
+    })) as AttendanceLog[];
+  } catch (error) {
+    console.error(`Error fetching attendance logs for user ${userEmail}:`, error);
+    return [];
+  }
+}
+
+
 export async function updateAttendanceLogInDb(logToUpdate: AttendanceLog): Promise<AttendanceLog | null> {
   try {
     const { db } = await connectToDatabase();
-    const { _id, ...dataToUpdate } = logToUpdate; // Separate _id
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, ...dataToUpdate } = logToUpdate; 
 
-    if (!_id) {
-      throw new Error("Cannot update log without an _id.");
+    if (!logToUpdate.id) { // Using custom 'id' field for matching
+      throw new Error("Cannot update log without a custom 'id'.");
     }
     
-    // Ensure you're querying by MongoDB's _id, not the custom `id` field if they differ.
-    // If your `logToUpdate` still has `_id` as a string, you might need to convert it to ObjectId
-    // For simplicity, assuming `logToUpdate._id` is the correct MongoDB document ID as a string.
-    // If `_id` is an ObjectId, this won't work directly, you'd fetch then update.
-    // However, we are converting to string when fetching, so this should be fine if _id is the string version.
-
     const result = await db.collection('attendanceLogs').updateOne(
-      { id: logToUpdate.id }, // Assuming 'id' is the unique custom identifier for your logs
+      { id: logToUpdate.id }, 
       { $set: dataToUpdate }
     );
 
@@ -51,12 +70,11 @@ export async function updateAttendanceLogInDb(logToUpdate: AttendanceLog): Promi
       console.warn(`Document with id: ${logToUpdate.id} was found but not modified (data might be the same).`);
     }
     
-    // Return the updated log (or fetch it again if $set doesn't return the full doc and you need it)
-    // For this example, we'll assume the input `logToUpdate` reflects the desired state.
+    // Return the log as it was passed, assuming the update was successful if matched/modified
     return logToUpdate;
 
   } catch (error) {
-    console.error('Error updating attendance log:', error);
-    throw error; // Re-throw to be caught by the caller
+    console.error('Error updating attendance log in DB:', error);
+    throw error; 
   }
 }

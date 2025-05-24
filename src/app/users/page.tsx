@@ -1,10 +1,11 @@
+
 'use client';
 
 import PageHeader from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { Users as UsersIcon, UserPlus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { mockUsers } from '@/lib/mockData'; 
+// import { mockUsers } from '@/lib/mockData'; // No longer using mock data
+import type { UserProfile } from '@/types';
+import { getUsers } from '@/app/actions/userActions'; // Import the new action
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,16 +30,37 @@ export default function UserManagementPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [currentUsers, setCurrentUsers] = useState<UserProfile[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
   const isAdmin = user?.primaryEmailAddress?.emailAddress === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
   useEffect(() => {
     if (authLoaded && userLoaded) {
       if (isSignedIn && !isAdmin) {
         router.replace('/dashboard'); 
+      } else if (isSignedIn && isAdmin) {
+        fetchUsersFromDb();
       }
-      // If not signedIn, Clerk middleware should handle redirection.
     }
   }, [isSignedIn, isAdmin, authLoaded, userLoaded, router]);
+
+  const fetchUsersFromDb = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const usersFromDb = await getUsers();
+      setCurrentUsers(usersFromDb);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      toast({
+        title: "Error Fetching Users",
+        description: "Could not retrieve user records from the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   const handleDemoAction = (actionName: string) => {
     toast({
@@ -51,7 +75,7 @@ export default function UserManagementPage() {
     return namePart.substring(0, 2).toUpperCase();
   };
 
-  if (!authLoaded || !userLoaded) {
+  if (!authLoaded || !userLoaded || (isSignedIn && isAdmin && isLoadingUsers)) {
     return (
       <div className="flex h-[calc(100vh-theme(spacing.16))] items-center justify-center">
         <LoadingSpinner size="xl" />
@@ -90,9 +114,9 @@ export default function UserManagementPage() {
       />
       <Card className="shadow-lg bg-card">
         <CardHeader>
-          <CardTitle>All Users ({mockUsers.length}) - Mock Data</CardTitle>
+          <CardTitle>All Users ({currentUsers.length}) - From Database</CardTitle>
           <CardDescription>
-            List of mock users. Actual user management is handled via your Clerk dashboard.
+            List of users from the database. Actual user management is handled via your Clerk dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,25 +126,26 @@ export default function UserManagementPage() {
                 <TableHead className="w-[80px]">Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role (Mock)</TableHead>
+                <TableHead>Role (DB)</TableHead>
                 <TableHead className="text-right">Actions (Demo)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockUsers.map((mockUser) => (
-                <TableRow key={mockUser.id} className="hover:bg-muted/50 transition-colors">
+              {currentUsers.length > 0 ? currentUsers.map((dbUser) => (
+                <TableRow key={dbUser.id} className="hover:bg-muted/50 transition-colors">
                   <TableCell>
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={mockUser.photoURL || ''} alt={mockUser.name || mockUser.email} data-ai-hint="user avatar" />
-                        <AvatarFallback>{getInitials(mockUser.name, mockUser.email)}</AvatarFallback>
+                        {/* dbUser.avatarUrl comes from UserProfile type, which maps to photoURL from seeded data */}
+                        <AvatarImage src={dbUser.avatarUrl || dbUser.photoURL || ''} alt={dbUser.name || dbUser.email} data-ai-hint="user avatar" />
+                        <AvatarFallback>{getInitials(dbUser.name, dbUser.email)}</AvatarFallback>
                     </Avatar>
                   </TableCell>
-                  <TableCell className="font-medium">{mockUser.name || 'N/A'}</TableCell>
-                  <TableCell>{mockUser.email}</TableCell>
+                  <TableCell className="font-medium">{dbUser.name || 'N/A'}</TableCell>
+                  <TableCell>{dbUser.email}</TableCell>
                   <TableCell>
-                    <Badge variant={mockUser.role === 'admin' ? 'default' : 'secondary'} 
-                           className={`${mockUser.role === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'} font-semibold`}>
-                      {mockUser.role.charAt(0).toUpperCase() + mockUser.role.slice(1)}
+                    <Badge variant={dbUser.role === 'admin' ? 'default' : 'secondary'} 
+                           className={`${dbUser.role === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'} font-semibold`}>
+                      {dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right space-x-1">
@@ -132,7 +157,13 @@ export default function UserManagementPage() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                 <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No users found in the database.
+                    </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -144,10 +175,10 @@ export default function UserManagementPage() {
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <UsersIcon className="h-16 w-16 text-muted-foreground mb-4" />
           <p className="text-lg font-medium text-foreground">
-            This page uses mock data for demonstration.
+            This page displays user data from your MongoDB 'users' collection.
           </p>
           <p className="text-sm text-muted-foreground">
-            Actual user creation, editing, role assignment, and deletion are managed through your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Clerk Dashboard</a>.
+            Actual user creation, editing, role assignment, and deletion are managed through your <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Clerk Dashboard</a>. The data here reflects what was seeded or subsequently synced.
           </p>
         </CardContent>
       </Card>
